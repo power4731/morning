@@ -1,0 +1,463 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="모닝루틴">
+<meta name="theme-color" content="#ffffff">
+<link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 180 180'%3E%3Crect width='180' height='180' rx='40' fill='%23F5A623'/%3E%3Ctext x='90' y='118' font-size='100' text-anchor='middle' fill='white'%3E☀%3C/text%3E%3C/svg%3E">
+<title>모닝루틴</title>
+<style>
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  html, body {
+    margin: 0; padding: 0;
+    font-family: -apple-system, BlinkMacSystemFont, 'SF Pro', 'Helvetica Neue', sans-serif;
+    background: #FAFAF7;
+    color: #1A1A1A;
+    -webkit-font-smoothing: antialiased;
+    overscroll-behavior-y: contain;
+  }
+  body {
+    max-width: 500px;
+    margin: 0 auto;
+    padding: max(env(safe-area-inset-top), 20px) 20px max(env(safe-area-inset-bottom), 20px);
+    min-height: 100vh;
+  }
+
+  /* 다크모드 */
+  @media (prefers-color-scheme: dark) {
+    html, body { background: #1A1A1A; color: #F5F5F5; }
+    .card { background: #2A2A2A !important; border-color: #3A3A3A !important; }
+    .stat-card { background: #2A2A2A !important; }
+    .check-row { background: #2A2A2A !important; border-color: #3A3A3A !important; }
+    .check-row.done { background: rgba(60, 145, 90, 0.15) !important; border-color: rgba(60, 145, 90, 0.4) !important; }
+    input[type="number"], input[type="text"] {
+      background: #2A2A2A !important; color: #F5F5F5 !important; border-color: #3A3A3A !important;
+    }
+    button { background: #2A2A2A !important; color: #F5F5F5 !important; border-color: #3A3A3A !important; }
+    .progress-bg { background: #2A2A2A !important; }
+    .secondary-text { color: #999 !important; }
+  }
+
+  .header {
+    display: flex; justify-content: space-between; align-items: center;
+    margin-bottom: 16px;
+  }
+  .date-main { font-size: 22px; font-weight: 600; }
+  .date-sub { font-size: 13px; color: #888; margin-top: 2px; }
+  .badge {
+    font-size: 14px; font-weight: 500;
+    padding: 8px 14px; border-radius: 999px;
+    background: rgba(0,0,0,0.05);
+    color: #555;
+  }
+  @media (prefers-color-scheme: dark) { .badge { background: rgba(255,255,255,0.1); color: #ccc; } }
+
+  .progress-bg {
+    height: 6px; background: rgba(0,0,0,0.06);
+    border-radius: 999px; overflow: hidden;
+    margin-bottom: 20px;
+  }
+  .progress-bar {
+    height: 100%; width: 0%;
+    background: #F5A623;
+    transition: width 0.3s ease;
+    border-radius: 999px;
+  }
+
+  .check-list { display: flex; flex-direction: column; gap: 8px; margin-bottom: 20px; }
+  .check-row {
+    display: flex; align-items: center; gap: 14px;
+    padding: 16px 16px;
+    background: white;
+    border: 0.5px solid rgba(0,0,0,0.1);
+    border-radius: 14px;
+    cursor: pointer;
+    transition: all 0.15s;
+    user-select: none;
+    -webkit-user-select: none;
+  }
+  .check-row:active { transform: scale(0.98); }
+  .check-row.done {
+    background: rgba(60, 145, 90, 0.08);
+    border-color: rgba(60, 145, 90, 0.3);
+  }
+  .check-circle {
+    width: 26px; height: 26px; border-radius: 50%;
+    border: 2px solid #CCC;
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0;
+    font-size: 16px; color: white;
+    transition: all 0.15s;
+  }
+  .check-row.done .check-circle {
+    background: #3C915A; border-color: #3C915A;
+  }
+  .check-icon { font-size: 22px; }
+  .check-label {
+    flex: 1; font-size: 16px; font-weight: 500;
+  }
+  .check-row.done .check-label {
+    text-decoration: line-through;
+    color: #888;
+  }
+
+  .card {
+    background: white;
+    border: 0.5px solid rgba(0,0,0,0.1);
+    border-radius: 14px;
+    padding: 16px;
+    margin-bottom: 12px;
+  }
+  .card-title {
+    font-size: 14px; font-weight: 600;
+    margin-bottom: 12px;
+    display: flex; align-items: center; gap: 8px;
+  }
+
+  input[type="number"], input[type="text"] {
+    font-family: inherit;
+    font-size: 16px;
+    padding: 12px 14px;
+    border: 0.5px solid rgba(0,0,0,0.15);
+    border-radius: 10px;
+    background: white;
+    color: #1A1A1A;
+    width: 100%;
+    -webkit-appearance: none;
+    appearance: none;
+  }
+  input[type="number"]:focus { outline: 2px solid #F5A623; outline-offset: -1px; }
+
+  button {
+    font-family: inherit;
+    font-size: 15px; font-weight: 500;
+    padding: 12px 18px;
+    border: 0.5px solid rgba(0,0,0,0.15);
+    border-radius: 10px;
+    background: white;
+    color: #1A1A1A;
+    cursor: pointer;
+    -webkit-appearance: none;
+  }
+  button:active { transform: scale(0.97); }
+  button.primary {
+    background: #F5A623; color: white; border-color: #F5A623;
+  }
+
+  .weight-row {
+    display: flex; gap: 8px; align-items: center;
+  }
+  .weight-row input { flex: 1; }
+  .weight-unit { font-size: 14px; color: #888; }
+  .weight-status {
+    font-size: 13px; color: #888; margin-top: 8px; min-height: 18px;
+  }
+
+  .chart-wrap {
+    position: relative; height: 140px; margin-top: 4px;
+  }
+  .chart-summary {
+    font-size: 13px; color: #888; float: right;
+  }
+
+  .stats-grid {
+    display: grid; grid-template-columns: 1fr 1fr; gap: 10px;
+    margin-bottom: 16px;
+  }
+  .stat-card {
+    background: rgba(0,0,0,0.03);
+    border-radius: 12px;
+    padding: 14px;
+  }
+  .stat-label { font-size: 13px; color: #888; }
+  .stat-value { font-size: 24px; font-weight: 600; margin-top: 4px; }
+
+  .actions { display: flex; gap: 8px; margin-bottom: 32px; }
+  .actions button { flex: 1; }
+
+  .secondary-text { color: #888; }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div>
+    <div id="today-date" class="date-main">—</div>
+    <div id="today-day" class="date-sub">—</div>
+  </div>
+  <div id="progress-badge" class="badge">0 / 7</div>
+</div>
+
+<div class="progress-bg">
+  <div id="progress-bar" class="progress-bar"></div>
+</div>
+
+<div id="checklist" class="check-list"></div>
+
+<div class="card">
+  <div class="card-title">⚖️ 오늘 체중</div>
+  <div class="weight-row">
+    <input type="number" id="weight-input" step="0.1" inputmode="decimal" placeholder="예: 65.4">
+    <span class="weight-unit">kg</span>
+    <button class="primary" id="save-weight" style="padding: 12px 20px;">저장</button>
+  </div>
+  <div id="weight-status" class="weight-status"></div>
+</div>
+
+<div class="card">
+  <div class="card-title">
+    📈 체중 추이 (최근 14일)
+    <span id="weight-summary" class="chart-summary">—</span>
+  </div>
+  <div class="chart-wrap">
+    <canvas id="weight-chart"></canvas>
+  </div>
+</div>
+
+<div class="stats-grid">
+  <div class="stat-card">
+    <div class="stat-label">연속 완수</div>
+    <div id="streak-count" class="stat-value">0일</div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-label">7일 평균 달성</div>
+    <div id="avg-completion" class="stat-value">0%</div>
+  </div>
+</div>
+
+<div class="actions">
+  <button id="reset-day">오늘 초기화</button>
+  <button id="export-data">데이터 내보내기</button>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<script>
+const ROUTINE_ITEMS = [
+  { id: 'water', label: '물 한 잔 마시기', icon: '💧' },
+  { id: 'probiotic', label: '유산균 먹기', icon: '💊' },
+  { id: 'weight', label: '몸무게 체크', icon: '⚖️' },
+  { id: 'gargle', label: '가글하기', icon: '🪥' },
+  { id: 'meditation', label: '마음챙김 7분', icon: '🧘' },
+  { id: 'exercise', label: '운동 15분', icon: '🏃' },
+  { id: 'stretch', label: '스트레칭 3분', icon: '🤸' }
+];
+
+const today = new Date();
+const todayKey = today.toISOString().slice(0, 10);
+const days = ['일','월','화','수','목','금','토'];
+
+document.getElementById('today-date').textContent = `${today.getMonth()+1}월 ${today.getDate()}일`;
+document.getElementById('today-day').textContent = `${days[today.getDay()]}요일`;
+
+// ===== 데이터 로드 (localStorage) =====
+function loadJSON(key, fallback) {
+  try { return JSON.parse(localStorage.getItem(key)) || fallback; }
+  catch(e) { return fallback; }
+}
+function saveJSON(key, val) {
+  try { localStorage.setItem(key, JSON.stringify(val)); } catch(e) {}
+}
+
+let todayState = loadJSON(`routine:${todayKey}`, {});
+let weightHistory = loadJSON('weights', {});
+let routineHistory = loadJSON('routine-history', {});
+
+// ===== 체크리스트 렌더 =====
+function renderChecklist() {
+  const container = document.getElementById('checklist');
+  container.innerHTML = '';
+  let done = 0;
+
+  ROUTINE_ITEMS.forEach(item => {
+    const checked = !!todayState[item.id];
+    if (checked) done++;
+
+    const row = document.createElement('div');
+    row.className = 'check-row' + (checked ? ' done' : '');
+    row.innerHTML = `
+      <div class="check-circle">${checked ? '✓' : ''}</div>
+      <span class="check-icon">${item.icon}</span>
+      <span class="check-label">${item.label}</span>
+    `;
+    row.addEventListener('click', () => {
+      todayState[item.id] = !todayState[item.id];
+      saveToday();
+      renderChecklist();
+      updateStats();
+      if (navigator.vibrate) navigator.vibrate(10);
+    });
+    container.appendChild(row);
+  });
+
+  document.getElementById('progress-badge').textContent = `${done} / ${ROUTINE_ITEMS.length}`;
+  document.getElementById('progress-bar').style.width = `${(done / ROUTINE_ITEMS.length) * 100}%`;
+}
+
+function saveToday() {
+  saveJSON(`routine:${todayKey}`, todayState);
+  const done = ROUTINE_ITEMS.filter(i => todayState[i.id]).length;
+  routineHistory[todayKey] = done / ROUTINE_ITEMS.length;
+  saveJSON('routine-history', routineHistory);
+}
+
+// ===== 체중 저장 =====
+document.getElementById('save-weight').addEventListener('click', () => {
+  const input = document.getElementById('weight-input');
+  const val = parseFloat(input.value);
+  const status = document.getElementById('weight-status');
+
+  if (isNaN(val) || val < 20 || val > 300) {
+    status.textContent = '올바른 체중을 입력해주세요';
+    status.style.color = '#D85A30';
+    return;
+  }
+
+  weightHistory[todayKey] = val;
+  todayState.weight = true;
+  saveJSON('weights', weightHistory);
+  saveToday();
+
+  status.textContent = `${val}kg 저장됨 ✓`;
+  status.style.color = '#3C915A';
+  input.value = '';
+  input.blur();
+
+  renderChecklist();
+  renderChart();
+  updateStats();
+});
+
+document.getElementById('weight-input').addEventListener('keydown', (e) => {
+  if (e.key === 'Enter') document.getElementById('save-weight').click();
+});
+
+// ===== 체중 차트 =====
+let chart = null;
+function renderChart() {
+  const labels = [];
+  const data = [];
+  for (let i = 13; i >= 0; i--) {
+    const d = new Date(today);
+    d.setDate(d.getDate() - i);
+    const key = d.toISOString().slice(0, 10);
+    labels.push(`${d.getMonth()+1}/${d.getDate()}`);
+    data.push(weightHistory[key] !== undefined ? weightHistory[key] : null);
+  }
+
+  const validData = data.filter(v => v !== null);
+  const summary = document.getElementById('weight-summary');
+  if (validData.length >= 2) {
+    const diff = (validData[validData.length-1] - validData[0]).toFixed(1);
+    const sign = diff > 0 ? '+' : '';
+    summary.textContent = `${sign}${diff}kg`;
+    summary.style.color = diff > 0 ? '#D85A30' : diff < 0 ? '#3C915A' : '#888';
+  } else if (validData.length === 1) {
+    summary.textContent = `${validData[0]}kg`;
+    summary.style.color = '#888';
+  } else {
+    summary.textContent = '데이터 없음';
+    summary.style.color = '#888';
+  }
+
+  const isDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+  const textColor = isDark ? '#999' : '#888';
+  const gridColor = isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.06)';
+
+  const ctx = document.getElementById('weight-chart').getContext('2d');
+  if (chart) chart.destroy();
+  chart = new Chart(ctx, {
+    type: 'line',
+    data: {
+      labels,
+      datasets: [{
+        data,
+        borderColor: '#F5A623',
+        backgroundColor: 'rgba(245, 166, 35, 0.12)',
+        borderWidth: 2.5,
+        tension: 0.3,
+        pointRadius: 3,
+        pointBackgroundColor: '#F5A623',
+        spanGaps: true,
+        fill: true
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: { legend: { display: false }, tooltip: { enabled: true } },
+      scales: {
+        x: { ticks: { color: textColor, font: { size: 10 } }, grid: { display: false } },
+        y: { ticks: { color: textColor, font: { size: 10 } }, grid: { color: gridColor } }
+      }
+    }
+  });
+}
+
+// ===== 통계 =====
+function updateStats() {
+  let streak = 0;
+  for (let i = 0; i < 60; i++) {
+    const d = new Date(today);
+    d.setDate(d.getDate() - i);
+    const key = d.toISOString().slice(0, 10);
+    const completion = routineHistory[key];
+    if (completion && completion >= 0.7) streak++;
+    else if (i === 0) continue;
+    else break;
+  }
+  document.getElementById('streak-count').textContent = `${streak}일`;
+
+  let sum = 0, count = 0;
+  for (let i = 0; i < 7; i++) {
+    const d = new Date(today);
+    d.setDate(d.getDate() - i);
+    const key = d.toISOString().slice(0, 10);
+    if (routineHistory[key] !== undefined) {
+      sum += routineHistory[key];
+      count++;
+    }
+  }
+  const avg = count > 0 ? Math.round((sum / count) * 100) : 0;
+  document.getElementById('avg-completion').textContent = `${avg}%`;
+}
+
+// ===== 리셋 =====
+document.getElementById('reset-day').addEventListener('click', () => {
+  if (!confirm('오늘 기록을 초기화할까요?')) return;
+  todayState = {};
+  localStorage.removeItem(`routine:${todayKey}`);
+  delete routineHistory[todayKey];
+  saveJSON('routine-history', routineHistory);
+  renderChecklist();
+  updateStats();
+});
+
+// ===== 데이터 내보내기 =====
+document.getElementById('export-data').addEventListener('click', () => {
+  const data = {
+    weights: weightHistory,
+    routineHistory: routineHistory,
+    exportedAt: new Date().toISOString()
+  };
+  const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `morning-routine-${todayKey}.json`;
+  a.click();
+  URL.revokeObjectURL(url);
+});
+
+// ===== 다크모드 변경 시 차트 갱신 =====
+window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', renderChart);
+
+// ===== 초기 렌더 =====
+renderChecklist();
+renderChart();
+updateStats();
+</script>
+</body>
+</html>
